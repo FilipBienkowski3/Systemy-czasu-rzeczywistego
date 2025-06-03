@@ -13,13 +13,12 @@ Filip Bieńkowski
 
 ### Opis ogólny
 Zamodelowany system to **inteligentny system sterowania bramą wjazdową**, przeznaczony dla domów jednorodzinnych, wspólnot mieszkaniowych lub obiektów przemysłowych.  
-Głównym celem systemu jest bezpieczne i niezawodne otwieranie/zamykanie bramy wjazdowej na podstawie poleceń z różnych źródeł – pilota, aplikacji mobilnej, czytnika RFID – z uwzględnieniem logiki bezpieczeństwa oraz trybów automatycznych.
+Głównym celem systemu jest bezpieczne i niezawodne otwieranie/zamykanie bramy wjazdowej na podstawie poleceń z różnych źródeł – pilota, aplikacji mobilnej – z uwzględnieniem logiki bezpieczeństwa oraz trybów automatycznych.
 
 ### Opis szczegółowy
 System umożliwia sterowanie bramą z wielu źródeł:
 - pilot zdalnego sterowania,
 - aplikacja mobilna,
-- czytnik RFID (dla mieszkańców lub uprawnionych pojazdów),
 - harmonogram czasowy (automatyczne zamykanie).
 
 Fizyczne otwieranie i zamykanie realizuje **siłownik** sterowany przez **centralę systemową**. Ruch bramy monitorowany jest przez **czujniki krańcowe**, które wykrywają stany bramy (otwarta, zamknięta, pośrednia).  
@@ -38,7 +37,6 @@ Dodatkowo, możliwa jest konfiguracja automatycznego zamknięcia bramy po okreś
 | `device GateMotor`           | Siłownik elektryczny otwierający/zamykający bramę                   |
 | `device LimitSwitch`         | Czujniki pozycji krańcowej bramy (otwarta/zamknięta)                |
 | `device RemoteControlReceiver` | Odbiornik sygnału z pilota zdalnego sterowania                     |
-| `device RFIDReader`          | Czytnik kart RFID umożliwiający dostęp                              |
 | `device SafetySensor`        | Czujniki bezpieczeństwa (np. fotokomórki)                            |
 | `device ManualOverride`      | Mechanizm ręcznego otwierania bramy                                 |
 | `thread CommandProcessor`    | Wątek sterujący główną logiką bramy                                 |
@@ -50,7 +48,7 @@ Dodatkowo, możliwa jest konfiguracja automatycznego zamknięcia bramy po okreś
 
 ## Możliwości systemu
 
-- Wieloźródłowe sterowanie bramą (pilot, aplikacja, RFID)
+- Wieloźródłowe sterowanie bramą (pilot, aplikacja)
 - Reakcja na przeszkody i sytuacje awaryjne
 - Harmonogram czasowy i tryb automatycznego zamykania
 - Obsługa ręcznego trybu awaryjnego
