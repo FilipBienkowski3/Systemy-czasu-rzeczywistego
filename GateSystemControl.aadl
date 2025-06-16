@@ -1,0 +1,285 @@
+package GateControlSystem
+public
+    with SEI;
+    with Data_Model;
+    with Base_Types;
+
+    -- DATA TYPES --
+    
+    data GateCommand
+        properties
+            Data_Model::Enumerators => ("Open", "Close", "Stop");
+            Data_Model::base_type => (classifier (Base_Types::Integer));
+            Data_Size => 1 Bytes;
+    end GateCommand;
+
+    data GatePosition
+        properties
+            Data_Model::Enumerators => ("Closed", "Opening", "Open", "Closing", "Stopped");
+            Data_Model::base_type => (classifier (Base_Types::Integer));
+            Data_Size => 1 Bytes;
+    end GatePosition;
+
+    data ObstacleDetected
+        properties
+            Data_Model::Data_Representation => Boolean;
+            Data_Model::base_type => (classifier (Base_Types::Boolean));
+            Data_Size => 1 Bytes;
+    end ObstacleDetected;
+
+    data RemoteSignal
+        properties
+            Data_Model::base_type => (classifier (Base_Types::Unsigned_8));
+            Data_Size => 1 Bytes;
+    end RemoteSignal;
+
+    data TimerValue
+        properties
+            Data_Model::base_type => (classifier (Base_Types::Unsigned_16));
+            Data_Size => 2 Bytes;
+    end TimerValue;
+
+    data ManualOverrideStatus
+        properties
+            Data_Model::Data_Representation => Boolean;
+            Data_Model::base_type => (classifier (Base_Types::Boolean));
+            Data_Size => 1 Bytes;
+    end ManualOverrideStatus;
+
+    -- MAIN SYSTEM --
+    system GateControlSystem
+    end GateControlSystem;
+
+    system implementation GateControlSystem.impl
+        subcomponents
+            -- Processes
+            gateController: process GateController.impl;
+            
+            -- Devices
+            gateMotor: device GateMotor.impl;
+            limitSwitch: device LimitSwitch.impl;
+            remoteReceiver: device RemoteControlReceiver.impl;
+            safetySensor: device SafetySensor.impl;
+            manualOverride: device ManualOverride.impl;
+            
+            -- Hardware
+            cpu: processor CPU.impl;
+            ram: memory RAM.impl;
+            communicationBus: bus CommunicationBus.impl;
+
+        connections
+            -- Control connections
+            c1: port gateController.motor_command -> gateMotor.command_in;
+            c2: port limitSwitch.position_out -> gateController.gate_position;
+            c3: port remoteReceiver.signal_out -> gateController.remote_signal;
+            c4: port safetySensor.obstacle_out -> gateController.obstacle_detected;
+            c5: port manualOverride.status_out -> gateController.manual_status;
+
+            -- Bus connections
+            c6: bus access cpu.bus_access <-> communicationBus;
+            c7: bus access ram.bus_access <-> communicationBus;
+            c8: bus access gateMotor.bus_access <-> communicationBus;
+            c9: bus access limitSwitch.bus_access <-> communicationBus;
+            c10: bus access remoteReceiver.bus_access <-> communicationBus;
+            c11: bus access safetySensor.bus_access <-> communicationBus;
+            c12: bus access manualOverride.bus_access <-> communicationBus;
+
+        properties
+            Actual_Processor_Binding => (reference (cpu)) applies to gateController;
+            Actual_Memory_Binding => (reference (ram)) applies to gateController;
+            Actual_Connection_Binding => (reference(communicationBus)) applies to c1, c2, c3, c4, c5;
+    end GateControlSystem.impl;
+
+    -- PROCESSES --
+    process GateController
+        features
+            motor_command: out data port GateCommand;
+            gate_position: in data port GatePosition;
+            remote_signal: in data port RemoteSignal;
+            obstacle_detected: in data port ObstacleDetected;
+            manual_status: in data port ManualOverrideStatus;
+        properties
+            SEI::MIPSBudget => 50.0 mips;
+    end GateController;
+
+    process implementation GateController.impl
+        subcomponents
+            commandProcessor: thread CommandProcessor.impl;
+            safetyMonitor: thread SafetyMonitor.impl;
+            autoCloseScheduler: thread AutoCloseScheduler.impl;
+        connections
+            -- Command processor connections
+            c1: port remote_signal -> commandProcessor.remote_signal_in;
+            c2: port gate_position -> commandProcessor.gate_position_in;
+            c3: port manual_status -> commandProcessor.manual_status_in;
+            c4: port commandProcessor.motor_command_out -> motor_command;
+            
+            -- Safety monitor connections
+            c5: port obstacle_detected -> safetyMonitor.obstacle_in;
+            c6: port gate_position -> safetyMonitor.gate_position_in;
+            c7: port safetyMonitor.emergency_stop -> commandProcessor.emergency_stop_in;
+            
+            -- Auto close scheduler connections
+            c8: port gate_position -> autoCloseScheduler.gate_position_in;
+            c9: port autoCloseScheduler.auto_close_command -> commandProcessor.auto_close_in;
+    end GateController.impl;
+
+    -- THREADS --
+    thread CommandProcessor
+        features
+            remote_signal_in: in data port RemoteSignal;
+            gate_position_in: in data port GatePosition;
+            manual_status_in: in data port ManualOverrideStatus;
+            emergency_stop_in: in data port GateCommand;
+            auto_close_in: in data port GateCommand;
+            motor_command_out: out data port GateCommand;
+        properties
+            Dispatch_Protocol => Periodic;
+            Period => 100ms;
+            Compute_Execution_Time => 5ms..10ms;
+            Deadline => 50ms;
+            SEI::MIPSBudget => 25.0 mips;
+    end CommandProcessor;
+
+    thread implementation CommandProcessor.impl
+    end CommandProcessor.impl;
+
+    thread SafetyMonitor
+        features
+            obstacle_in: in data port ObstacleDetected;
+            gate_position_in: in data port GatePosition;
+            emergency_stop: out data port GateCommand;
+        properties
+            Dispatch_Protocol => Periodic;
+            Period => 50ms;
+            Compute_Execution_Time => 2ms..5ms;
+            Deadline => 25ms;
+            SEI::MIPSBudget => 15.0 mips;
+    end SafetyMonitor;
+
+    thread implementation SafetyMonitor.impl
+    end SafetyMonitor.impl;
+
+    thread AutoCloseScheduler
+        features
+            gate_position_in: in data port GatePosition;
+            auto_close_command: out data port GateCommand;
+        properties
+            Dispatch_Protocol => Periodic;
+            Period => 1000ms;
+            Compute_Execution_Time => 1ms..3ms;
+            Deadline => 500ms;
+            SEI::MIPSBudget => 10.0 mips;
+    end AutoCloseScheduler;
+
+    thread implementation AutoCloseScheduler.impl
+    end AutoCloseScheduler.impl;
+
+    -- DEVICES --
+    device GateMotor
+        features
+            command_in: in data port GateCommand;
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 15.0 kg;
+            Dispatch_Protocol => Periodic;
+            Period => 100ms;
+            Transmission_Time => [Fixed => 5ms .. 10ms;];
+    end GateMotor;
+
+    device implementation GateMotor.impl
+    end GateMotor.impl;
+
+    device LimitSwitch
+        features
+            position_out: out data port GatePosition;
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 0.2 kg;
+            Dispatch_Protocol => Periodic;
+            Period => 50ms;
+            Transmission_Time => [Fixed => 1ms .. 2ms;];
+    end LimitSwitch;
+
+    device implementation LimitSwitch.impl
+    end LimitSwitch.impl;
+
+    device RemoteControlReceiver
+        features
+            signal_out: out data port RemoteSignal;
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 0.1 kg;
+            Dispatch_Protocol => Sporadic;
+            Period => 10ms;
+            Transmission_Time => [Fixed => 2ms .. 5ms;];
+    end RemoteControlReceiver;
+
+    device implementation RemoteControlReceiver.impl
+    end RemoteControlReceiver.impl;
+
+    device SafetySensor
+        features
+            obstacle_out: out data port ObstacleDetected;
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 0.3 kg;
+            Dispatch_Protocol => Periodic;
+            Period => 20ms;
+            Transmission_Time => [Fixed => 1ms .. 3ms;];
+    end SafetySensor;
+
+    device implementation SafetySensor.impl
+    end SafetySensor.impl;
+
+    device ManualOverride
+        features
+            status_out: out data port ManualOverrideStatus;
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 0.5 kg;
+            Dispatch_Protocol => Sporadic;
+            Period => 100ms;
+            Transmission_Time => [Fixed => 1ms .. 2ms;];
+    end ManualOverride;
+
+    device implementation ManualOverride.impl
+    end ManualOverride.impl;
+
+    -- HARDWARE COMPONENTS --
+    processor CPU
+        features
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::MIPSCapacity => 100.0 mips;
+            SEI::GrossWeight => 0.3 kg;
+            Scheduling_Protocol => (RMS);
+            Clock_Period => 1ms;
+    end CPU;
+
+    processor implementation CPU.impl
+    end CPU.impl;
+
+    memory RAM
+        features
+            bus_access: requires bus access CommunicationBus;
+        properties
+            SEI::GrossWeight => 0.1 kg;
+            Memory_Size => 1024 KByte;
+    end RAM;
+
+    memory implementation RAM.impl
+    end RAM.impl;
+
+    bus CommunicationBus
+        properties
+            SEI::BandWidthCapacity => 10.0 MBytesps;
+            SEI::BandWidthBudget => 2.0 MBytesps;
+            SEI::GrossWeight => 0.5 kg;
+            Transmission_Time => [Fixed => 10ns .. 20ns; PerByte => 100ns .. 200ns;];
+    end CommunicationBus;
+
+    bus implementation CommunicationBus.impl
+    end CommunicationBus.impl;
+
+end GateControlSystem;

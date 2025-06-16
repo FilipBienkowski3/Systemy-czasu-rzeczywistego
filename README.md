@@ -1,103 +1,179 @@
 # Systemy Czasu Rzeczywistego – Projekt
 
-## 1.Tytuł modelu
+## 1. Tytuł modelu
 **System sterowania bramą wjazdową**
 
-## 2.Autor
-Filip Bieńkowski
-📧 fbienkowski@student.agh.edu.pl
+## 2. Autor
+**Filip Bieńkowski**  
+fbienkowski@student.agh.edu.pl
 
 ---
 
-## 3.Opis modelowanego systemu
-System kontroli bramy automatycznej to zintegrowany system embedded odpowiedzialny za bezpieczne i automatyczne zarządzanie bramą wjazdową. System obsługuje sterowanie pilotem, wykrywanie przeszkód, automatyczne zamykanie oraz tryb ręczny. Model został zaprojektowany z uwzględnieniem wymagań czasu rzeczywistego i bezpieczeństwa funkcjonalnego.
+## 3. Opis modelowanego systemu
 
-## 4.Opis ogólny
-Architektura systemu
-System zbudowany jest w oparciu o architekturę warstwową składającą się z:
+System kontroli bramy automatycznej to zintegrowany system embedded odpowiedzialny za bezpieczne i automatyczne zarządzanie bramą wjazdową. Obsługuje sterowanie pilotem, wykrywanie przeszkód, automatyczne zamykanie oraz tryb ręczny.
 
-Warstwy aplikacyjnej - procesy sterujące (GateController)
-Warstwy urządzeń - czujniki i aktuatory (GateMotor, SafetySensor, etc.)
-Warstwy sprzętowej - procesor, pamięć, magistrala komunikacyjna
+Model został zaprojektowany z uwzględnieniem wymagań czasu rzeczywistego i bezpieczeństwa funkcjonalnego.
 
-Główne funkcjonalności
+---
 
-Sterowanie zdalne - obsługa sygnałów z pilota zdalnego sterowania
-Monitoring bezpieczeństwa - ciągły nadzór nad przeszkodami w torze ruchu bramy
-Automatyczne zamykanie - zamykanie bramy po upływie określonego czasu
-Tryb ręczny - możliwość przełączenia na sterowanie manualne
-Kontrola pozycji - precyzyjne śledzenie położenia bramy
+## 4. Opis ogólny
 
-Wymagania czasowe
-System pracuje w czasie rzeczywistym z najkrótszym cyklem 20ms (SafetySensor) i najdłuższym 1000ms (AutoCloseScheduler). Scheduler RMS zapewnia deterministyczne wykonanie zadań.
+### Architektura systemu
 
-## 5.Opis dla użytkownika
+System zbudowany jest w oparciu o architekturę warstwową:
 
-Jak używać systemu
+- Warstwa aplikacyjna – procesy sterujące (`GateController`)
+- Warstwa urządzeń – czujniki i aktuatory (`GateMotor`, `SafetySensor`, itp.)
+- Warstwa sprzętowa – procesor, pamięć, magistrala komunikacyjna
 
-Zdalne sterowanie - naciśnij przycisk na pilocie aby otworzyć/zamknąć bramę
-Automatyczne zamykanie - brama automatycznie zamknie się po określonym czasie od otwarcia
-Wykrywanie przeszkód - system automatycznie zatrzyma bramę przy wykryciu przeszkody
-Tryb ręczny - w przypadku awarii można przełączyć na sterowanie manualne
+### Główne funkcjonalności
 
-Stany bramy
+- Sterowanie zdalne – obsługa sygnałów z pilota
+- Monitoring bezpieczeństwa – detekcja przeszkód
+- Automatyczne zamykanie – po zadanym czasie
+- Tryb ręczny – możliwość ręcznego przejęcia kontroli
+- Kontrola pozycji – śledzenie stanu bramy
 
-Closed - brama zamknięta
-Opening - brama w trakcie otwierania
-Open - brama otwarta
-Closing - brama w trakcie zamykania
-Stopped - brama zatrzymana (np. z powodu przeszkody)
+### Wymagania czasowe
 
-Komendy sterujące
+System działa w czasie rzeczywistym z cyklami:
 
-Open - otwórz bramę
-Close - zamknij bramę
-Stop - zatrzymaj bramę
+- Najkrótszy: 20 ms (dla `SafetySensor`)
+- Najdłuższy: 1000 ms (dla `AutoCloseScheduler`)
 
-## 6.Komponenty systemu
+Szeregowanie realizowane algorytmem RMS (Rate Monotonic Scheduling).
 
-# Typy danych
--- Definicja komend sterujących - bramą data GateCommand
--- Status pozycji bramy z pięcioma możliwymi stanami - data GatePosition
--- Sygnał wykrycia przeszkody (wartość boolean) - data ObstacleDetected
+---
 
-# System główny
--- Główny system integrujący wszystkie komponenty
-system implementation GateControlSystem.impl
-    subcomponents
-        gateController: process GateController.impl;  -- Proces sterujący
-        gateMotor: device GateMotor.impl;             -- Silnik bramy
-        limitSwitch: device LimitSwitch.impl;         -- Wyłączniki krańcowe
-        remoteReceiver: device RemoteControlReceiver.impl;  -- Odbiornik pilota
-        safetySensor: device SafetySensor.impl;       -- Czujnik bezpieczeństwa
-        manualOverride: device ManualOverride.impl;   -- Przełącznik trybu ręcznego
-        cpu: processor CPU.impl;                      -- Procesor główny
-        ram: memory RAM.impl;                         -- Pamięć RAM
-        communicationBus: bus CommunicationBus.impl;  -- Magistrala komunikacyjna
+## 5. Opis dla użytkownika
 
-# Procesy i wątki
--- Główny proces sterujący zawierający logikę systemu - process GateController
--- Wątek przetwarzający komendy z okresem 100ms - thread CommandProcessor
--- Wątek monitoringu bezpieczeństwa z najwyższym priorytetem (50ms) - thread SafetyMonitor
--- Wątek automatycznego zamykania z najdłuższym okresem (1s) - thread AutoCloseScheduler
+### Jak używać systemu
 
-# Urządzenia
--- Silnik bramy - główny aktuator systemu (15kg) - device GateMotor
--- Czujnik bezpieczeństwa - najczęściej sprawdzany (20ms) - device SafetySensor
--- Odbiornik zdalnego sterowania - tryb sporadyczny - device RemoteControlReceiver
+- Zdalne sterowanie – naciśnij przycisk na pilocie, aby otworzyć lub zamknąć bramę
+- Automatyczne zamykanie – brama zamyka się automatycznie po ustalonym czasie
+- Wykrywanie przeszkód – brama zatrzymuje się w razie wykrycia przeszkody
+- Tryb ręczny – możliwe sterowanie ręczne w przypadku awarii
 
-#Sprzęt
--- Procesor z schedulingiem RMS i mocą 100 MIPS - processor CPU
--- Magistrala komunikacyjna z przepustowością 10 MB/s - bus CommunicationBus
+### Stany bramy
 
-## 7.Model - diagramy
+- `Closed` – brama zamknięta
+- `Opening` – brama w trakcie otwierania
+- `Open` – brama otwarta
+- `Closing` – brama w trakcie zamykania
+- `Stopped` – brama zatrzymana (np. przez przeszkodę)
 
+### Komendy sterujące
 
+- `Open` – otwórz bramę
+- `Close` – zamknij bramę
+- `Stop` – zatrzymaj bramę
 
-## Analiza czasowa
-System spełnia wymagania czasu rzeczywistego dzięki:
+---
 
-Algorytmowi szeregowania RMS
-Odpowiednio dobranym okresom wykonania wątków
-Budżetom mocy obliczeniowej nieprzekraczającym 50% dostępnej mocy procesora
-Krótkim terminom wykonania zadań krytycznych dla bezpieczeństwa
+## 6. Komponenty systemu
+
+### Typy danych
+
+- `GateCommand` – komendy sterujące bramą
+- `GatePosition` – stany pozycji bramy
+- `ObstacleDetected` – sygnał przeszkody (boolean)
+
+### System główny
+
+`system implementation GateControlSystem.impl` zawiera:
+
+- `gateController` – proces sterujący
+- `gateMotor` – silnik bramy
+- `limitSwitch` – czujniki krańcowe
+- `remoteReceiver` – odbiornik pilota
+- `safetySensor` – czujnik bezpieczeństwa
+- `manualOverride` – przełącznik trybu ręcznego
+- `cpu` – procesor
+- `ram` – pamięć RAM
+- `communicationBus` – magistrala komunikacyjna
+
+### Procesy i wątki
+
+- `GateController` – główny proces logiki sterującej
+  - `CommandProcessor` – przetwarzanie komend (100 ms)
+  - `SafetyMonitor` – nadzór bezpieczeństwa (50 ms)
+  - `AutoCloseScheduler` – automatyczne zamykanie (1000 ms)
+
+### Urządzenia
+
+- `GateMotor` – silnik (waga 15 kg)
+- `SafetySensor` – czujnik przeszkód (okres 20 ms)
+- `RemoteControlReceiver` – odbiornik pilota (sporadyczne zdarzenia)
+
+### Sprzęt
+
+- `CPU` – 100 MIPS, algorytm RMS
+- `CommunicationBus` – przepustowość 10 MB/s
+
+---
+
+## 7. Model – diagramy
+
+### Wersja 1 – pierwotna
+
+![Wersja 1](diagrams/wersja1.png)
+
+### Wersja 2 – po dodaniu brakujących komponentów
+
+![Wersja 2](diagrams/wersja2.png)
+
+### Wersja 3 – po dodaniu bindingów
+
+![Wersja 3](diagrams/wersja3.png)
+
+---
+## 8. Proponowane metody analizy modelu, dostępne w OSATE. Wyniki przeprowadzonych analiz
+
+W celu weryfikacji poprawności modelu przeprowadzono szereg analiz przy użyciu narzędzia OSATE:
+
+### 8.1 Analiza spójności połączeń (Connection Consistency)
+
+Sprawdzenie poprawności i kompletności połączeń między komponentami systemu.
+
+**Wynik:**
+![Raport - Connection Consistency](raports/raport3.png)
+
+---
+
+### 8.2 Analiza spójności portów (Port Connection Consistency)
+
+Weryfikacja, czy połączenia portów typu `in` i `out` są zgodne i poprawnie zdefiniowane.
+
+**Wynik:**
+![Raport - Port Connection Consistency](raports/raport2.png)
+
+---
+
+### 8.3 Analiza spójności powiązań (Connection Binding Consistency)
+
+Sprawdzenie poprawności wiązań (bindingów) komponentów do sprzętu (np. procesora, pamięci).
+
+**Wynik:**
+![Raport - Connection Binding Consistency](raports/raport1.png)
+
+---
+
+### 8.4 Weryfikacja ograniczeń powiązań (Check Binding Constraints)
+
+Analiza poprawności narzuconych ograniczeń powiązań (`Actual_Processor_Binding`, `Actual_Memory_Binding`, itp.).
+
+**Wynik:**
+![Raport - Binding Constraints](raports/raport4.png)
+
+---
+
+### 8.5 Analiza wag komponentów (Weight Analysis)
+
+Sprawdzenie poprawności przypisanych wag komponentów fizycznych (urządzeń i sprzętu).
+
+**Wynik:**
+![Raport - Weight Analysis](raports/raport5.png)
+
+---
+
