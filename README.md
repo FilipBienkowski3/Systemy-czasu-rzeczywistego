@@ -1,59 +1,103 @@
 # Systemy Czasu Rzeczywistego – Projekt
 
-## Tytuł modelu
+## 1.Tytuł modelu
 **System sterowania bramą wjazdową**
 
-## Autor
+## 2.Autor
 Filip Bieńkowski
 📧 fbienkowski@student.agh.edu.pl
 
 ---
 
-## Opis modelowanego systemu
+## 3.Opis modelowanego systemu
+System kontroli bramy automatycznej to zintegrowany system embedded odpowiedzialny za bezpieczne i automatyczne zarządzanie bramą wjazdową. System obsługuje sterowanie pilotem, wykrywanie przeszkód, automatyczne zamykanie oraz tryb ręczny. Model został zaprojektowany z uwzględnieniem wymagań czasu rzeczywistego i bezpieczeństwa funkcjonalnego.
 
-### Opis ogólny
-Zamodelowany system to **inteligentny system sterowania bramą wjazdową**, przeznaczony dla domów jednorodzinnych, wspólnot mieszkaniowych lub obiektów przemysłowych.  
-Głównym celem systemu jest bezpieczne i niezawodne otwieranie/zamykanie bramy wjazdowej na podstawie poleceń z różnych źródeł – pilota, aplikacji mobilnej – z uwzględnieniem logiki bezpieczeństwa oraz trybów automatycznych.
+## 4.Opis ogólny
+Architektura systemu
+System zbudowany jest w oparciu o architekturę warstwową składającą się z:
 
-### Opis szczegółowy
-System umożliwia sterowanie bramą z wielu źródeł:
-- pilot zdalnego sterowania,
-- aplikacja mobilna,
-- harmonogram czasowy (automatyczne zamykanie).
+Warstwy aplikacyjnej - procesy sterujące (GateController)
+Warstwy urządzeń - czujniki i aktuatory (GateMotor, SafetySensor, etc.)
+Warstwy sprzętowej - procesor, pamięć, magistrala komunikacyjna
 
-Fizyczne otwieranie i zamykanie realizuje **siłownik** sterowany przez **centralę systemową**. Ruch bramy monitorowany jest przez **czujniki krańcowe**, które wykrywają stany bramy (otwarta, zamknięta, pośrednia).  
-**Czujniki bezpieczeństwa** (np. fotokomórki) wykrywają przeszkody – w razie ich wykrycia system zatrzymuje ruch bramy, zapobiegając wypadkom.  
+Główne funkcjonalności
 
-W razie awarii, np. braku zasilania, dostępny jest **mechanizm ręcznego odblokowania** i możliwość zasilania awaryjnego.  
-Dodatkowo, możliwa jest konfiguracja automatycznego zamknięcia bramy po określonym czasie lub wg ustalonego harmonogramu.
+Sterowanie zdalne - obsługa sygnałów z pilota zdalnego sterowania
+Monitoring bezpieczeństwa - ciągły nadzór nad przeszkodami w torze ruchu bramy
+Automatyczne zamykanie - zamykanie bramy po upływie określonego czasu
+Tryb ręczny - możliwość przełączenia na sterowanie manualne
+Kontrola pozycji - precyzyjne śledzenie położenia bramy
 
----
+Wymagania czasowe
+System pracuje w czasie rzeczywistym z najkrótszym cyklem 20ms (SafetySensor) i najdłuższym 1000ms (AutoCloseScheduler). Scheduler RMS zapewnia deterministyczne wykonanie zadań.
 
-## Komponenty systemu
+## 5.Opis dla użytkownika
 
-| Komponent              | Opis                                                                 |
-|------------------------|----------------------------------------------------------------------|
-| `system GateControlSystem`   | Główny system sterujący logiką bramy                               |
-| `device GateMotor`           | Siłownik elektryczny otwierający/zamykający bramę                   |
-| `device LimitSwitch`         | Czujniki pozycji krańcowej bramy (otwarta/zamknięta)                |
-| `device RemoteControlReceiver` | Odbiornik sygnału z pilota zdalnego sterowania                     |
-| `device SafetySensor`        | Czujniki bezpieczeństwa (np. fotokomórki)                            |
-| `device ManualOverride`      | Mechanizm ręcznego otwierania bramy                                 |
-| `thread CommandProcessor`    | Wątek sterujący główną logiką bramy                                 |
-| `thread SafetyMonitor`       | Wątek monitorujący stan bezpieczeństwa systemu                      |
-| `thread AutoCloseScheduler`  | Wątek zarządzający automatycznym zamknięciem                        |
-| `bus CommunicationBus`       | Magistrala komunikacyjna łącząca wszystkie komponenty systemu        |
+Jak używać systemu
 
----
+Zdalne sterowanie - naciśnij przycisk na pilocie aby otworzyć/zamknąć bramę
+Automatyczne zamykanie - brama automatycznie zamknie się po określonym czasie od otwarcia
+Wykrywanie przeszkód - system automatycznie zatrzyma bramę przy wykryciu przeszkody
+Tryb ręczny - w przypadku awarii można przełączyć na sterowanie manualne
 
-## Możliwości systemu
+Stany bramy
 
-- Wieloźródłowe sterowanie bramą (pilot, aplikacja)
-- Reakcja na przeszkody i sytuacje awaryjne
-- Harmonogram czasowy i tryb automatycznego zamykania
-- Obsługa ręcznego trybu awaryjnego
-- Integracja z siecią i innymi systemami (opcjonalnie)
+Closed - brama zamknięta
+Opening - brama w trakcie otwierania
+Open - brama otwarta
+Closing - brama w trakcie zamykania
+Stopped - brama zatrzymana (np. z powodu przeszkody)
+
+Komendy sterujące
+
+Open - otwórz bramę
+Close - zamknij bramę
+Stop - zatrzymaj bramę
+
+## 6.Komponenty systemu
+
+# Typy danych
+-- Definicja komend sterujących - bramą data GateCommand
+-- Status pozycji bramy z pięcioma możliwymi stanami - data GatePosition
+-- Sygnał wykrycia przeszkody (wartość boolean) - data ObstacleDetected
+
+# System główny
+-- Główny system integrujący wszystkie komponenty
+system implementation GateControlSystem.impl
+    subcomponents
+        gateController: process GateController.impl;  -- Proces sterujący
+        gateMotor: device GateMotor.impl;             -- Silnik bramy
+        limitSwitch: device LimitSwitch.impl;         -- Wyłączniki krańcowe
+        remoteReceiver: device RemoteControlReceiver.impl;  -- Odbiornik pilota
+        safetySensor: device SafetySensor.impl;       -- Czujnik bezpieczeństwa
+        manualOverride: device ManualOverride.impl;   -- Przełącznik trybu ręcznego
+        cpu: processor CPU.impl;                      -- Procesor główny
+        ram: memory RAM.impl;                         -- Pamięć RAM
+        communicationBus: bus CommunicationBus.impl;  -- Magistrala komunikacyjna
+
+# Procesy i wątki
+-- Główny proces sterujący zawierający logikę systemu - process GateController
+-- Wątek przetwarzający komendy z okresem 100ms - thread CommandProcessor
+-- Wątek monitoringu bezpieczeństwa z najwyższym priorytetem (50ms) - thread SafetyMonitor
+-- Wątek automatycznego zamykania z najdłuższym okresem (1s) - thread AutoCloseScheduler
+
+# Urządzenia
+-- Silnik bramy - główny aktuator systemu (15kg) - device GateMotor
+-- Czujnik bezpieczeństwa - najczęściej sprawdzany (20ms) - device SafetySensor
+-- Odbiornik zdalnego sterowania - tryb sporadyczny - device RemoteControlReceiver
+
+#Sprzęt
+-- Procesor z schedulingiem RMS i mocą 100 MIPS - processor CPU
+-- Magistrala komunikacyjna z przepustowością 10 MB/s - bus CommunicationBus
+
+## 7.Model - diagramy
 
 
 
+## Analiza czasowa
+System spełnia wymagania czasu rzeczywistego dzięki:
 
+Algorytmowi szeregowania RMS
+Odpowiednio dobranym okresom wykonania wątków
+Budżetom mocy obliczeniowej nieprzekraczającym 50% dostępnej mocy procesora
+Krótkim terminom wykonania zadań krytycznych dla bezpieczeństwa
