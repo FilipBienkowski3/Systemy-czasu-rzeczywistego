@@ -73,6 +73,21 @@ Szeregowanie realizowane algorytmem RMS (Rate Monotonic Scheduling).
 
 ## 6. Komponenty systemu
 
+| **Komponent**            | **Typ**                  | **Opis**                                                                 |
+|--------------------------|---------------------------|--------------------------------------------------------------------------|
+| `GateControlSystem`      | `system`                  | Główna jednostka zarządzająca całością działania bramy.                 |
+| `CommandProcessor`       | `process/thread`          | Przetwarza komendy otwarcia, zamknięcia i zatrzymania.                  |
+| `GateMotor`              | `device`                  | Wykonuje ruchy fizyczne bramy. Wysyła komendy co 100ms.                 |
+| `LimitSwitch`            | `device`                  | Odczytuje pozycję bramy (otwarta/zamknięta), cyklicznie co 50ms.        |
+| `SafetySensor`           | `device`                  | Wykrywa przeszkody na drodze bramy, odświeżany co 20ms.                 |
+| `RemoteControlReceiver`  | `device`                  | Odbiera sygnały z pilota – otwarcie, zatrzymanie, zamknięcie.          |
+| `ManualOverride`         | `device`                  | Pozwala użytkownikowi ręcznie kontrolować bramę.                        |
+| `AutoCloseScheduler`     | `thread/process`          | Harmonogram zamykania bramy automatycznie po czasie.                    |
+| `SafetyMonitor`          | `thread/process`          | Monitoruje warunki bezpieczeństwa, wyzwala `emergency_stop`.           |
+| `CPU`                    | `processor`               | Jednostka wykonawcza całego systemu.                                     |
+| `RAM`                    | `memory`                  | Pamięć operacyjna do przechowywania stanu i danych tymczasowych.        |
+| `CommunicationBus`       | `bus`                     | Magistrala komunikacyjna łącząca komponenty systemu.                    |
+
 ### Typy danych
 
 - `GateCommand` – komendy sterujące bramą
